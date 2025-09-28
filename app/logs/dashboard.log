@@ -1,0 +1,244 @@
+# dashboard.py
+import streamlit as st
+import pandas as pd
+import time
+import logging
+import logging.handlers
+import os
+from utils import (
+    load_models_safe,
+    predict_workload,
+    predict_accuracy,
+    predict_emotion,
+)
+from components import workload_gauge, accuracy_line, emotion_timeline
+
+# ---------- Prepare log directory ----------
+LOG_DIR = os.path.join(os.path.dirname(__file__), "logs")
+os.makedirs(LOG_DIR, exist_ok=True)
+LOG_FILE = os.path.join(LOG_DIR, "dashboard.log")
+
+# ---------- Configure logging (console + file) ----------
+logger = logging.getLogger("dashboard")
+logger.setLevel(logging.DEBUG)  # capture everything; handlers filter as needed
+
+# Console handler (INFO+)
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)
+ch.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%H:%M:%S"))
+logger.addHandler(ch)
+
+# Rotating file handler (DEBUG+)
+fh = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8")
+fh.setLevel(logging.DEBUG)
+fh.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(filename)s:%(lineno)d - %(message)s", datefmt="%Y-%m-%d %H:%M:%S"))
+logger.addHandler(fh)
+
+# ---------- Page Setup ----------
+st.set_page_config(page_title="Mental State Monitoring Dashboard", layout="wide")
+st.title("🧠 Mental State Monitoring Dashboard")
+
+logger.debug("Starting Streamlit app (dashboard.py)")
+
+# ---------- Load models (cached) ----------
+models = load_models_safe(model_dir=os.path.join(os.path.dirname(__file__), "..", "models"))
+workload_model = models.get("workload")
+accuracy_model = models.get("accuracy")
+emotion_model = models.get("emotion")
+logger.info("✅ Models loaded successfully.")
+logger.debug(f"Model objects: workload={type(workload_model)}, accuracy={type(accuracy_model)}, emotion={type(emotion_model)}")
+
+# ---------- Sidebar: File upload ----------
+st.sidebar.header("Data source")
+uploaded_file = st.sidebar.file_uploader(
+    "Upload CSV with model input features (rows = samples)", type=["csv"]
+)
+
+@st.cache_data
+def load_csv(file):
+    logger.debug("load_csv: reading file into cache")
+    return pd.read_csv(file)
+
+# ---------- Initialize session_state ----------
+if "df" not in st.session_state:
+    st.session_state.df = None
+if "idx" not in st.session_state:
+    st.session_state.idx = 0
+if "running" not in st.session_state:
+    st.session_state.running = False
+if "accuracy_history" not in st.session_state:
+    st.session_state.accuracy_history = []
+if "emotion_history" not in st.session_state:
+    st.session_state.emotion_history = []
+if "last_processed_index" not in st.session_state:
+    st.session_state.last_processed_index = -1
+
+# ---------- Load CSV into session_state (once per upload) ----------
+if uploaded_file is not None and st.session_state.df is None:
+    try:
+        df = load_csv(uploaded_file)
+        if df.empty:
+            st.sidebar.error("Uploaded CSV is empty.")
+            logger.warning("Uploaded CSV was empty.")
+        else:
+            st.session_state.df = df.reset_index(drop=True)
+            st.sidebar.success(f"Loaded {len(st.session_state.df)} samples.")
+            logger.info(f"✅ CSV loaded with {len(st.session_state.df)} samples.")
+            logger.debug(f"CSV columns: {list(st.session_state.df.columns)}")
+            # Reset playback state
+            st.session_state.idx = 0
+            st.session_state.accuracy_history = []
+            st.session_state.emotion_history = []
+            st.session_state.last_processed_index = -1
+    except Exception as e:
+        st.sidebar.error(f"Error reading CSV: {e}")
+        logger.exception("❌ Error reading CSV")
+
+# ---------- Stop if no data ----------
+if st.session_state.df is None:
+    st.info("Upload a CSV with one sample per row (features in same order as models expect).")
+    logger.info("ℹ️ No CSV loaded yet. Waiting for file upload.")
+    st.stop()
+
+# ---------- Sidebar: Controls ----------
+col1, col2, col3 = st.sidebar.columns([1, 1, 1])
+if col1.button("⏮ Prev"):
+    st.session_state.running = False
+    st.session_state.idx = max(0, st.session_state.idx - 1)
+    logger.info(f"⏮ Prev → index {st.session_state.idx}")
+
+if col2.button("▶ Start"):
+    st.session_state.running = True
+    logger.info("▶ Streaming started.")
+
+if col3.button("⏹ Stop"):
+    st.session_state.running = False
+    logger.info("⏹ Streaming stopped.")
+
+col4, col5 = st.sidebar.columns([1, 1])
+if col4.button("⏭ Next"):
+    st.session_state.running = False
+    st.session_state.idx = min(len(st.session_state.df) - 1, st.session_state.idx + 1)
+    logger.info(f"⏭ Next → index {st.session_state.idx}")
+
+if col5.button("🔁 Reset"):
+    st.session_state.running = False
+    st.session_state.idx = 0
+    st.session_state.accuracy_history = []
+    st.session_state.emotion_history = []
+    st.session_state.last_processed_index = -1
+    logger.info("🔁 Dashboard reset.")
+
+# ---------- Playback speed ----------
+speed = st.sidebar.slider(
+    "Auto-play delay (seconds)", min_value=0.2, max_value=3.0, value=1.0, step=0.1
+)
+
+# ---------- Placeholders (charts) ----------
+workload_placeholder = st.empty()
+accuracy_placeholder = st.empty()
+emotion_placeholder = st.empty()
+
+# ---------- Process row ----------
+def process_row(row_values):
+    # row_values expected as 1D array-like of numeric features
+    try:
+        workload = predict_workload(row_values, workload_model) if workload_model else None
+        logger.debug(f"Workload prediction: {workload}")
+    except Exception as e:
+        workload = None
+        st.error(f"Workload prediction error: {e}")
+        logger.exception("Workload prediction error")
+
+    try:
+        accuracy = predict_accuracy(row_values, accuracy_model) if accuracy_model else None
+        logger.debug(f"Accuracy prediction: {accuracy}")
+    except Exception as e:
+        accuracy = None
+        st.error(f"Accuracy prediction error: {e}")
+        logger.exception("Accuracy prediction error")
+
+    try:
+        emotion = predict_emotion(row_values, emotion_model) if emotion_model else None
+        logger.debug(f"Emotion prediction: {emotion}")
+    except Exception as e:
+        emotion = None
+        st.error(f"Emotion prediction error: {e}")
+        logger.exception("Emotion prediction error")
+
+    t = len(st.session_state.accuracy_history)
+    st.session_state.accuracy_history.append(
+        {"time": t, "accuracy": float(accuracy) if accuracy is not None else None}
+    )
+    st.session_state.emotion_history.append(
+        {"start": t, "end": t + 1, "emotion": str(emotion) if emotion else "unknown"}
+    )
+
+    # Log a concise summary to both console and file
+    logger.info(f"Processed row {t} | workload={workload} | accuracy={accuracy} | emotion={emotion}")
+
+    return workload, accuracy, emotion
+
+# ---------- Main update ----------
+df = st.session_state.df
+idx = st.session_state.idx
+if idx >= len(df):
+    st.session_state.running = False
+    st.session_state.idx = len(df) - 1
+    idx = st.session_state.idx
+    logger.info("Reached last sample in CSV.")
+
+# Convert current row to numeric array (guarding conversion)
+try:
+    row_values = df.iloc[idx].values.astype(float)
+except Exception:
+    # fallback: try to coerce column-by-column
+    logger.warning("Row conversion to float failed; attempting per-element coercion.")
+    row_values = []
+    for v in df.iloc[idx].values:
+        try:
+            row_values.append(float(v))
+        except Exception:
+            row_values.append(0.0)
+    row_values = pd.np.array(row_values)  # deprecated but kept as fallback
+
+if st.session_state.last_processed_index != idx:
+    workload, accuracy, emotion = process_row(row_values)
+    st.session_state.last_processed_index = idx
+else:
+    workload, accuracy, emotion = None, None, None
+
+# ---------- Render charts ----------
+with workload_placeholder.container():
+    if workload is not None:
+        st.plotly_chart(workload_gauge(workload), use_container_width=True)
+    else:
+        st.write("Workload: —")
+
+with accuracy_placeholder.container():
+    acc_df = pd.DataFrame(st.session_state.accuracy_history)
+    st.plotly_chart(accuracy_line(acc_df), use_container_width=True)
+
+with emotion_placeholder.container():
+    emo_df = pd.DataFrame(st.session_state.emotion_history)
+    st.plotly_chart(emotion_timeline(emo_df), use_container_width=True)
+
+# ---------- Sidebar summary ----------
+st.sidebar.markdown("---")
+st.sidebar.header("Latest prediction")
+st.sidebar.write(f"Sample index: {idx}/{len(df)-1}")
+st.sidebar.write(f"Workload: {workload}")
+st.sidebar.write(f"Accuracy prob: {accuracy}")
+st.sidebar.write(f"Emotion: {emotion}")
+
+# ---------- Auto advance ----------
+if st.session_state.running:
+    if st.session_state.idx < len(df) - 1:
+        time.sleep(float(speed))
+        st.session_state.idx += 1
+        logger.debug(f"Auto-advance to index {st.session_state.idx}")
+        st.rerun()
+    else:
+        st.session_state.running = False
+        st.success("Reached end of dataset.")
+        logger.info("✅ Reached end of dataset. Streaming stopped.")
