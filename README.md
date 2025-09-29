@@ -86,11 +86,14 @@ Since the models and datasets may be large, they are stored externally.
 
 ## 👥 Team - Group 4InLine (T1_G20)
 
-Group Members: 1. Aakash Mohole
-               2. Vinayak Vathare
-               3. Shreyash Shetty
+**Faculty Mentor** : **Mrs. T.V. Deokar**
+Group Members: <br>
+1. Aakash Mohole <br>
+2. Vinayak Vathare <br>
+3. Shreyash Shetty
+
                
-Faculty Mentor: Mrs. T.V. Deokar
+
 
 Department: CSE (Data Science)
 
