@@ -78,13 +78,13 @@ This solution simulates real-time input from multimodal data sources (EEG, GSR, 
 4. Observe real-time workload gauge, accuracy graph, and emotion transition flows.
 
 
-🔗 Resources & Drive Link
+## 🔗 Resources & Drive Link
 
 Since the models and datasets may be large, they are stored externally.
 
 👉 [Click here to access project files (Google Drive)](https://drive.google.com/drive/folders/1ceLALHU3k7zsFGPZ8IhNIpAbEuE6Ihah)
 
-👥 Team - Group 4InLine (T1_G20)
+## 👥 Team - Group 4InLine (T1_G20)
 
 Group Members: 1. Aakash Mohole
                2. Vinayak Vathare
@@ -94,6 +94,6 @@ Faculty Mentor: Mrs. T.V. Deokar
 
 Department: CSE (Data Science)
 
-📜 License
+## 📜 License
 
 This project is developed for academic and research purposes under the IITB EdTech Internship Program.
