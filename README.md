@@ -56,10 +56,17 @@ project/
 3. Generate predictions for workload, accuracy, and emotion states.
 4. Update visualizations in real-time on the dashboard.
 
+🔗 Resources & Drive Link
+
+Since the models and datasets may be large, they are stored externally.
+👉 [Click here to access project files (Google Drive)](https://drive.google.com/drive/folders/1ceLALHU3k7zsFGPZ8IhNIpAbEuE6Ihah)
+
 👥 Team - Group 4InLine (T1_G20)
 
 Group Members: 1. Aakash Mohole
                2. Vinayak Vathare
                3. Shreyash Shetty
+               
 Faculty Mentor: Mrs. T.V. Deokar
+
 Department: CSE (Data Science)
