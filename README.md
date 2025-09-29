@@ -34,19 +34,19 @@ This solution simulates real-time input from multimodal data sources (EEG, GSR, 
 ## 📂 Project Structure  
 project/
 ├── data/
-│ ├── EEG.csv
-│ ├── GSR.csv
-│ ├── EYE.csv
-│ ├── TIVA.csv
-│ └── session_logs/
+│   ├── EEG.csv
+│   ├── GSR.csv
+│   ├── EYE.csv
+│   ├── TIVA.csv
+│   └── session_logs/
 ├── models/
-│ ├── workload_model.pkl
-│ ├── accuracy_model.pkl
-│ └── emotion_model.pkl
+│   ├── workload_model.pkl
+│   ├── accuracy_model.pkl
+│   └── emotion_model.pkl
 ├── app/
-│ ├── dashboard.py # Main Streamlit/Dash application
-│ ├── utils.py # Data stream + feature extraction
-│ └── components.py # Plotting helpers
+│   ├── dashboard.py        # Main Streamlit/Dash application
+│   ├── utils.py            # Data stream + feature extraction
+│   └── components.py       # Plotting helpers
 └── README.md
 
 📊 Sample Workflow
