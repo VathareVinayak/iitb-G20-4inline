@@ -24,8 +24,8 @@ This solution simulates real-time input from multimodal data sources (EEG, GSR, 
 ---
 
 ## 🛠️ Tech Stack  
-- **Frontend/UI**: [Streamlit](https://streamlit.io/) 
-- **Visualizations**: [Plotly](https://plotly.com/python/)  
+- **Frontend/UI**: Streamlit
+- **Visualizations**: Plotly  
 - **Backend/Models**: Pretrained ML models (`.pkl` / `.pt`)  
 - **Data Stream**: Simulated EEG, GSR, Eye-tracking, Facial expression signals  
 
@@ -59,6 +59,7 @@ project/
 🔗 Resources & Drive Link
 
 Since the models and datasets may be large, they are stored externally.
+
 👉 [Click here to access project files (Google Drive)](https://drive.google.com/drive/folders/1ceLALHU3k7zsFGPZ8IhNIpAbEuE6Ihah)
 
 👥 Team - Group 4InLine (T1_G20)
@@ -70,3 +71,7 @@ Group Members: 1. Aakash Mohole
 Faculty Mentor: Mrs. T.V. Deokar
 
 Department: CSE (Data Science)
+
+📜 License
+
+This project is developed for academic and research purposes under the IITB EdTech Internship Program.
