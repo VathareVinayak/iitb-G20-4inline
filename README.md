@@ -31,30 +31,52 @@ This solution simulates real-time input from multimodal data sources (EEG, GSR, 
 
 ---
 
-## 📂 Project Structure  
-project/
-├── data/
-│   ├── EEG.csv
-│   ├── GSR.csv
-│   ├── EYE.csv
-│   ├── TIVA.csv
-│   └── session_logs/
-├── models/
-│   ├── workload_model.pkl
-│   ├── accuracy_model.pkl
-│   └── emotion_model.pkl
-├── app/
-│   ├── dashboard.py        # Main Streamlit/Dash application
-│   ├── utils.py            # Data stream + feature extraction
-│   └── components.py       # Plotting helpers
-└── README.md
+## 📂 Project Structure
+- `project/`
+  - `data/`
+    - `EEG.csv`
+    - `GSR.csv`
+    - `EYE.csv`
+    - `TIVA.csv`
+    - `session_logs/`
+  - `models/`
+    - `workload_model.pkl`
+    - `accuracy_model.pkl`
+    - `emotion_model.pkl`
+  - `app/`
+    - `dashboard.py`        — Main Streamlit/Dash application
+    - `utils.py`            — Data streaming & feature extraction
+    - `components.py`       — Plotting / UI helper functions
+  - `README.md`
 
-📊 Sample Workflow
+---
 
-1. Load pretrained models (workload_model.pkl, accuracy_model.pkl, emotion_model.pkl).
-2. Stream simulated multimodal data (EEG, GSR, Eye, Facial expressions).
-3. Generate predictions for workload, accuracy, and emotion states.
-4. Update visualizations in real-time on the dashboard.
+## ⚙️ Installation & Setup
+
+1. **Clone the repository**
+    git clone https://github.com/<your-username>/<repo-name>.git
+    cd <repo-name>
+
+2. **Create a virtual environment (recommended)**
+    python -m venv venv
+    source venv/bin/activate   # Linux / Mac
+    venv\Scripts\activate      # Windows
+
+3. **Install dependencies**
+    pip install -r requirements.txt
+
+4. **Run the app**
+    streamlit run app/dashboard.py
+   *(If using Dash, run the Dash entrypoint instead.)*
+
+---
+
+## 📊 Typical Workflow
+1. Place pretrained models in `models/` (or point code to Drive link).  
+2. Provide session CSVs in `data/session_logs/`.  
+3. Start the dashboard — the app replays logs as simulated live stream.  
+4. Observe real-time workload gauge, accuracy graph, and emotion transition flows.
+
 
 🔗 Resources & Drive Link
 
